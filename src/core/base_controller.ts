@@ -15,10 +15,12 @@ export abstract class BaseController {
     VALUES (${keys.map((key) =>
       typeof newRow[key] === "string"
         ? '"' + newRow[key] + '"'
+        : Array.isArray(newRow[key])
+        ? '"' + JSON.stringify(newRow[key]) + '"'
         : typeof newRow[key] === "object" && moment(newRow[key]).isValid()
         ? '"' + moment(newRow[key]).format() + '"'
         : typeof newRow[key] === "object"
-        ? JSON.stringify(newRow[key])
+        ? '"' + JSON.stringify(newRow[key]) + '"'
         : newRow[key]
     )})`;
 
@@ -67,7 +69,9 @@ export abstract class BaseController {
     params.skip = !isNaN(Number(params.skip)) ? Number(params.skip) : 0;
     const { filter, limit, skip } = params;
 
-    let queryString: string = `SELECT * FROM ${this.tableName} WHERE ${filter} LIMIT ${skip}, ${limit}`;
+    let queryString: string = `SELECT * FROM ${this.tableName} ${
+      filter ? "WHERE" + filter : ""
+    } LIMIT ${skip}, ${limit}`;
 
     const result: any = await db.query(queryString);
 
@@ -86,17 +90,22 @@ export abstract class BaseController {
       queryString += ` ${key} =`;
       queryString +=
         typeof updatedRow[key] === "string"
-          ? ' "' + updatedRow[key] + '"'
+          ? '"' + updatedRow[key] + '"'
+          : Array.isArray(updatedRow[key])
+          ? "'" + JSON.stringify(updatedRow[key]) + "'"
           : typeof updatedRow[key] === "object" &&
             moment(updatedRow[key]).isValid()
-          ? ' "' + moment(updatedRow[key]).format() + '"'
+          ? '"' + moment(updatedRow[key]).format() + '"'
           : typeof updatedRow[key] === "object"
-          ? ` ${JSON.stringify(updatedRow[key])}`
-          : ` ${updatedRow[key]}`;
+          ? "'" + JSON.stringify(updatedRow[key]) + "'"
+          : updatedRow[key];
       queryString += ",";
     });
     queryString = queryString.slice(0, -1);
-    queryString += ` WHERE  id = ${id}`;
+    queryString += ` WHERE  id=${id}`;
+
+    console.log("1 - ########################################");
+    console.log(queryString);
 
     const result: any = await db.query(queryString);
 

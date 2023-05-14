@@ -13,6 +13,7 @@ export type ErrorType =
   | "INCORRECT_DATA";
 export type PaymentMode = "M-PESA" | "CASH" | "VISA" | "CHEQUE";
 export type EmployeePosition = "ADMIN" | "MANAGER" | "RECEPTION";
+export type RoomType = "SINGLE" | "DOUBLE" | "DELUXE" | "TWIN" | "TRIPLET";
 export enum HTTPStatusCodes {
   /**
    * Official Documentation @ https://tools.ietf.org/html/rfc7231#section-6.2.1

@@ -9,7 +9,10 @@ export function globalExceptionHandler(error, next) {
     title: error.title || "unknown error",
     message: error.message || "unknown error",
     statusCode: error.statusCode || HTTPStatusCodes.INTERNAL_SERVER_ERROR,
-    more: Object.keys(error.more).length > 0 ? error.more : { rawError: error },
+    more:
+      typeof error.more === "object" && Object.keys(error.more).length > 0
+        ? error.more
+        : { rawError: error },
   } as ErrorResponseModel);
 }
 

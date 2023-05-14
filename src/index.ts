@@ -1,11 +1,10 @@
 import express = require("express");
 import dotenv = require("dotenv");
 import cors = require("cors");
-const jtw = require("jsonwebtoken");
 const helmet = require("helmet");
 
-import { paymentRouter } from "./resources/payment/routers";
 import { authRouter } from "./resources/auth/routers";
+import { roomRouter } from "./resources/room/routers";
 import { ErrorResponseModel } from "./core/shared_models";
 import { HTTPStatusCodes } from "./core/constants";
 
@@ -22,8 +21,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/payment", paymentRouter);
 app.use("/auth", authRouter);
+app.use("/room", roomRouter);
 
 app.get("/", function (request: express.Request, response: express.Response) {
   response.json({

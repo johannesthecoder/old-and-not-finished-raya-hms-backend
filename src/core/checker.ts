@@ -22,7 +22,9 @@ export function isDefined(
     } else {
       return false;
     }
-  } else return true;
+  } else {
+    return true;
+  }
 }
 
 export function isNotDefined(
@@ -33,7 +35,7 @@ export function isNotDefined(
   return !isDefined(variable, name);
 }
 
-export function isNUmber(
+export function isNumber(
   variable: any,
   name: string,
   raiseExceptionIfFalse: boolean = true
@@ -79,6 +81,24 @@ export function isPositiveNumber(
     } as ErrorResponseModel;
   else return false;
 }
+
+// export function isBoolean(
+//   variable: any,
+//   name: string,
+//   raiseExceptionIfFalse: boolean = true
+// ): boolean {
+//   if (isDefined(variable, name) && typeof (variable) === "boolean") return true;
+
+//   if (raiseExceptionIfFalse)
+//     throw {
+//       success: false,
+//       type: "INCORRECT_DATA",
+//       title: `${name}: ${variable} is not a boolean`,
+//       message: `the value of ${name}=${variable} is not a valid boolean. the only accepted values for ${name} are true | false.`,
+//       statusCode: HTTPStatusCodes.UNPROCESSABLE_ENTITY,
+//     } as ErrorResponseModel;
+//   else return false;
+// }
 
 export function isParsableToArray(
   variable: any,
@@ -182,16 +202,12 @@ export function isValidPaymentMode(
   name: string,
   raiseExceptionIfFalse: boolean = true
 ): boolean {
-  if (["M-PESA", "CASH", "VISA", "CHEQUE"].includes(variable)) return true;
-  if (raiseExceptionIfFalse)
-    throw {
-      success: false,
-      type: "INCORRECT_DATA",
-      title: `${name}: ${variable} is valid value`,
-      message: `the value of ${name}=${variable} is not valid value. ${name} must be one of the following ["M-PESA" | "CASH" | "VISA" | "CHEQUE"]`,
-      statusCode: HTTPStatusCodes.UNPROCESSABLE_ENTITY,
-    } as ErrorResponseModel;
-  else return false;
+  return isValidValue(
+    variable,
+    ["M-PESA", "CASH", "VISA", "CHEQUE"],
+    name,
+    raiseExceptionIfFalse
+  );
 }
 
 export function isValidEmployeePosition(
@@ -199,13 +215,40 @@ export function isValidEmployeePosition(
   name: string,
   raiseExceptionIfFalse: boolean = true
 ): boolean {
-  if (["ADMIN", "MANAGER", "RECEPTION"].includes(variable)) return true;
+  return isValidValue(
+    variable,
+    ["ADMIN", "MANAGER", "RECEPTION"],
+    name,
+    raiseExceptionIfFalse
+  );
+}
+
+export function isValidRoomType(
+  variable: any,
+  name: string,
+  raiseExceptionIfFalse: boolean = true
+): boolean {
+  return isValidValue(
+    variable,
+    ["SINGLE", "DOUBLE", "DELUXE", "TWIN", "TRIPLET"],
+    name,
+    raiseExceptionIfFalse
+  );
+}
+
+export function isValidValue(
+  value: any,
+  validValues: string[],
+  name: string,
+  raiseExceptionIfFalse: boolean = true
+): boolean {
+  if (validValues.includes(value)) return true;
   if (raiseExceptionIfFalse)
     throw {
       success: false,
       type: "INCORRECT_DATA",
-      title: `${name}: ${variable} is valid value`,
-      message: `the value of ${name}=${variable} is not valid value. ${name} must be one of the following ["ADMIN" | "MANAGER" | "RECEPTION"]`,
+      title: `${name}: ${value} is valid value`,
+      message: `the value of ${name}=${value} is not valid value. ${name} must be one of the following ${validValues}`,
       statusCode: HTTPStatusCodes.UNPROCESSABLE_ENTITY,
     } as ErrorResponseModel;
   else return false;

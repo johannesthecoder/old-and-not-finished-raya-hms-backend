@@ -60,6 +60,12 @@ authRouter.post(
         } as SingleEmployeeResponseModel);
       }
     } catch (error: any) {
+      if (error.code === "ER_DUP_ENTRY") {
+        error.type = "DUPLICATED_ENTRY";
+        error.title = "duplicated room number";
+        error.statusCode = HTTPStatusCodes.CONFLICT;
+      }
+
       globalExceptionHandler(error, next);
     }
   }
