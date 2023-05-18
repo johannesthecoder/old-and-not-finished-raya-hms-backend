@@ -5,6 +5,7 @@ const helmet = require("helmet");
 
 import { authRouter } from "./resources/auth/routers";
 import { roomRouter } from "./resources/room/routers";
+import { guestRouter } from "./resources/guest/routers";
 import { ErrorResponseModel } from "./core/shared_models";
 import { HTTPStatusCodes } from "./core/constants";
 
@@ -23,6 +24,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/auth", authRouter);
 app.use("/room", roomRouter);
+app.use("/guest", guestRouter);
 
 app.get("/", function (request: express.Request, response: express.Response) {
   response.json({

@@ -5,7 +5,12 @@ import {
   RoomReadModel,
   SingleRoomResponseModel,
 } from "./models";
-import { globalExceptionHandler } from "../../core/utilities";
+import {
+  globalExceptionHandler,
+  missingDataException,
+  notFoundException,
+  unknownException,
+} from "../../core/utilities";
 import { roomController } from "./controller";
 import {
   isArray,
@@ -14,7 +19,6 @@ import {
   isPositiveNumber,
   isValidRoomType,
 } from "../../core/checker";
-import { ErrorResponseModel } from "../../core/shared_models";
 import { HTTPStatusCodes } from "../../core/constants";
 export const roomRouter = express.Router();
 
@@ -32,6 +36,9 @@ function queryParameterToMysqlFilter(queryParameter: any): string {
     isValidRoomType(queryParameter.roomType, "roomType")
   )
     filter += ` roomType="${queryParameter.roomType}" AND`;
+
+  if (isDefined(queryParameter.floor, "floor", false))
+    filter += ` floor="${queryParameter.floor}" AND`;
 
   if (isDefined(queryParameter.isOccupied, "isOccupied", false))
     filter += ` isOccupied=${queryParameter.isOccupied} AND`;
@@ -61,12 +68,12 @@ roomRouter.post(
 
       res.status(201).json({
         success: true,
-        room: { ...insertedRoom } as RoomReadModel,
+        room: RoomReadModel.fromJson(insertedRoom),
       } as SingleRoomResponseModel);
     } catch (error: any) {
       if (error.code === "ER_DUP_ENTRY") {
         error.type = "DUPLICATED_ENTRY";
-        error.title = "duplicated room number";
+        error.title = "duplicated room phoneNumber";
         error.statusCode = HTTPStatusCodes.CONFLICT;
       }
 
@@ -81,24 +88,17 @@ roomRouter.get(
     try {
       isPositiveNumber(req.params.id, "roomId");
 
-      let room = await roomController.getOneById({
-        id: Number(req.params.id),
+      let room = await roomController.getOne({
+        filter: `id=${Number(req.params.id)}`,
       });
-
-      res.json(
-        room.id
-          ? ({
-              success: true,
-              room: { ...room } as RoomReadModel,
-            } as SingleRoomResponseModel)
-          : ({
-              success: false,
-              type: "NOT_FOUND",
-              title: "room not found",
-              message: `room with an id: ${req.params.id} doesn't exist in this database.`,
-              statusCode: HTTPStatusCodes.NOT_FOUND,
-            } as ErrorResponseModel)
-      );
+      room.id
+        ? res.status(HTTPStatusCodes.OK).json({
+            success: true,
+            room: RoomReadModel.fromJson(room),
+          } as SingleRoomResponseModel)
+        : res
+            .status(HTTPStatusCodes.NOT_FOUND)
+            .json(notFoundException("room", req.query));
     } catch (error: any) {
       globalExceptionHandler(error, next);
     }
@@ -119,29 +119,22 @@ roomRouter.get(
           : Number(req.query.skip),
       });
 
-      res.json(
-        rooms.length > 0
-          ? ({
-              success: true,
-              rooms: rooms.map((room) => RoomReadModel.fromJson(room)),
-              more: {
-                matchedCount: rooms.length,
-              },
-            } as ManyRoomsResponseModel)
-          : ({
-              success: false,
-              type: "NOT_FOUND",
-              title: "room not found",
-              message: `room with the given filter doesn't exist in this database.`,
-              statusCode: HTTPStatusCodes.NOT_FOUND,
-            } as ErrorResponseModel)
-      );
+      rooms.length > 0
+        ? res.status(HTTPStatusCodes.OK).json({
+            success: true,
+            rooms: rooms.map((room) => RoomReadModel.fromJson(room)),
+            more: {
+              resultCount: rooms.length,
+            },
+          } as ManyRoomsResponseModel)
+        : res
+            .status(HTTPStatusCodes.NOT_FOUND)
+            .json(notFoundException("room", req.query));
     } catch (error: any) {
       globalExceptionHandler(error, next);
     }
   }
 );
-
 roomRouter.patch(
   "/status/:id",
   async function (req: express.Request, res: express.Response, next) {
@@ -161,36 +154,42 @@ roomRouter.patch(
       )
         update["problems"] = req.body.problems;
 
-      let updateResult = await roomController.updateOneById({
-        id: Number(req.params.id),
-        updatedRoom: update,
-      });
-
-      if (updateResult > 0) {
-      } else {
-        let updatedRoom: any[] = await roomController.getOneById({
+      if (Object.keys(update).length > 0) {
+        let updateResult = await roomController.updateOneById({
           id: Number(req.params.id),
+          updatedRoom: update,
         });
 
-        res.json(
-          updatedRoom
-            ? ({
+        if (updateResult > 0) {
+          let updatedRoom = await roomController.getOneById({
+            id: Number(req.params.id),
+          });
+          updatedRoom.id
+            ? res.json({
                 success: true,
                 room: RoomReadModel.fromJson(updatedRoom),
               } as SingleRoomResponseModel)
-            : ({
-                success: false,
-                type: "NOT_FOUND",
-                title: "room not found",
-                message: `room with an id: ${req.params.id} doesn't exist in this database.`,
-                statusCode: HTTPStatusCodes.NOT_FOUND,
-              } as ErrorResponseModel)
-        );
+            : res
+                .status(HTTPStatusCodes.INTERNAL_SERVER_ERROR)
+                .json(unknownException("updating"));
+        } else if (updateResult === -1) {
+          res
+            .status(HTTPStatusCodes.BAD_REQUEST)
+            .json(missingDataException("update"));
+        } else {
+          res
+            .status(HTTPStatusCodes.NOT_FOUND)
+            .json(notFoundException("room", req.query));
+        }
+      } else {
+        res
+          .status(HTTPStatusCodes.BAD_REQUEST)
+          .json(missingDataException("update"));
       }
     } catch (error: any) {
       if (error.code === "ER_DUP_ENTRY") {
         error.type = "DUPLICATED_ENTRY";
-        error.title = "duplicated room number";
+        error.title = "duplicated room phoneNumber";
         error.statusCode = HTTPStatusCodes.CONFLICT;
       }
 

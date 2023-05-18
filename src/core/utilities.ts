@@ -16,17 +16,58 @@ export function globalExceptionHandler(error, next) {
   } as ErrorResponseModel);
 }
 
+export function notFoundException(name: string, filter: object) {
+  return {
+    success: false,
+    type: "NOT_FOUND",
+    title: `${name} not found`,
+    message: `not ${name} with a filter ${JSON.stringify(
+      filter
+    )} was found. provide a valid/realistic filter`,
+    statusCode: HTTPStatusCodes.NOT_FOUND,
+    more: {
+      filter: filter,
+      resultCount: 0,
+    },
+  } as ErrorResponseModel;
+}
+
+export function missingDataException(name: string) {
+  return {
+    success: false,
+    type: "MISSING_DATA",
+    title: `${name} wasn't given`,
+    message: `a required data "${name}" wasn't given. provide the ${name} and try again`,
+    statusCode: HTTPStatusCodes.BAD_REQUEST,
+  } as ErrorResponseModel;
+}
+
+export function unknownException(
+  action: "updating" | "inserting" | "searching"
+) {
+  return {
+    success: false,
+    type: "UNKNOWN",
+    title: `unknown error while ${action}`,
+    message:
+      action == "searching"
+        ? `unknown error while ${action}. check your request and try again. if this keeps happening contact the admin`
+        : `unknown error while ${action}. check if action was successful before trying again to prevent duplication. `,
+    statusCode: HTTPStatusCodes.INTERNAL_SERVER_ERROR,
+  } as ErrorResponseModel;
+}
+
 /**
  *
  * @example "abcd" return "*a*b*c*d*"
  */
 export function stringToMysqlRegex(s: string): string {
-  let r: string = "%";
+  let r: string = "";
   s.split("").forEach(function (v) {
     r += `%${v}`;
   });
 
-  return r;
+  return r + "%";
 }
 
 /**

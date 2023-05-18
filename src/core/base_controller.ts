@@ -21,6 +21,8 @@ export abstract class BaseController {
         ? '"' + moment(newRow[key]).format() + '"'
         : typeof newRow[key] === "object"
         ? '"' + JSON.stringify(newRow[key]) + '"'
+        : typeof newRow[key] === "undefined" || newRow[key] == null
+        ? "NULL"
         : newRow[key]
     )})`;
 
@@ -87,10 +89,12 @@ export abstract class BaseController {
 
     let queryString: string = `UPDATE ${this.tableName} SET`;
     keys.forEach(function (key) {
-      queryString += ` ${key} =`;
+      queryString += ` ${key} = `;
       queryString +=
         typeof updatedRow[key] === "string"
-          ? '"' + updatedRow[key] + '"'
+          ? updatedRow[key][0] === "$"
+            ? updatedRow[key].slice(1, updatedRow[key].length)
+            : '"' + updatedRow[key] + '"'
           : Array.isArray(updatedRow[key])
           ? "'" + JSON.stringify(updatedRow[key]) + "'"
           : typeof updatedRow[key] === "object" &&
@@ -98,18 +102,22 @@ export abstract class BaseController {
           ? '"' + moment(updatedRow[key]).format() + '"'
           : typeof updatedRow[key] === "object"
           ? "'" + JSON.stringify(updatedRow[key]) + "'"
+          : typeof updatedRow[key] === "undefined" || updatedRow[key] == null
+          ? "NULL"
           : updatedRow[key];
+
       queryString += ",";
     });
     queryString = queryString.slice(0, -1);
     queryString += ` WHERE  id=${id}`;
 
-    console.log("1 - ########################################");
-    console.log(queryString);
-
     const result: any = await db.query(queryString);
 
-    return result.changedRows > 0 ? id : 0;
+    return result.affectedRows > 0 && result.changedRows > 0
+      ? id
+      : result.affectedRows
+      ? -1
+      : 0;
   }
 
   protected async _update(params: {
@@ -124,13 +132,20 @@ export abstract class BaseController {
       queryString += ` ${key} =`;
       queryString +=
         typeof updatedRow[key] === "string"
-          ? ' "' + updatedRow[key] + '"'
+          ? updatedRow[key][0] === "$"
+            ? updatedRow[key].slice(1, updatedRow[key].length)
+            : '"' + updatedRow[key] + '"'
+          : Array.isArray(updatedRow[key])
+          ? "'" + JSON.stringify(updatedRow[key]) + "'"
           : typeof updatedRow[key] === "object" &&
             moment(updatedRow[key]).isValid()
-          ? ' "' + moment(updatedRow[key]).format() + '"'
+          ? '"' + moment(updatedRow[key]).format() + '"'
           : typeof updatedRow[key] === "object"
-          ? ` ${JSON.stringify(updatedRow[key])}`
-          : ` ${updatedRow[key]}`;
+          ? "'" + JSON.stringify(updatedRow[key]) + "'"
+          : typeof updatedRow[key] === "undefined" || updatedRow[key] == null
+          ? "NULL"
+          : updatedRow[key];
+
       queryString += ",";
     });
     queryString = queryString.slice(0, -1);
