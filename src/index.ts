@@ -1,21 +1,26 @@
 import express = require("express");
-import dotenv = require("dotenv");
 import cors = require("cors");
-const helmet = require("helmet");
-
+import { ErrorResponseModel } from "./core/models";
+import { ErrorType, HTTPStatusCodes } from "./core/constants";
+import "./loadEnvironment.ts";
+import { connectDatabase } from "./core/database";
 import { authRouter } from "./resources/auth/routers";
 import { roomRouter } from "./resources/room/routers";
 import { guestRouter } from "./resources/guest/routers";
-import { ErrorResponseModel } from "./core/shared_models";
-import { HTTPStatusCodes } from "./core/constants";
+import { menuGroupRouter } from "./resources/menuGroup/routers";
+import { menuItemRouter } from "./resources/menuItem/routers";
+import { orderRouter } from "./resources/order/routers";
 
-dotenv.config();
+const helmet = require("helmet");
+
 if (!process.env.PORT) {
   process.exit(1);
 }
 
 const PORT = process.env.PORT;
 const app = express();
+
+connectDatabase();
 
 app.use(helmet());
 app.use(cors());
@@ -25,8 +30,11 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/auth", authRouter);
 app.use("/room", roomRouter);
 app.use("/guest", guestRouter);
+app.use("/menu/item", menuItemRouter);
+app.use("/menu/group", menuGroupRouter);
+app.use("/order", orderRouter);
 
-app.get("/", function (request: express.Request, response: express.Response) {
+app.get("/", async function (request: express.Request, response: express.Response, next) {
   response.json({
     success: true,
     message:
@@ -37,40 +45,28 @@ app.get("/", function (request: express.Request, response: express.Response) {
 app.all("*", (req, _res, next) => {
   const error: ErrorResponseModel = {
     success: false,
-    type: "NOT_FOUND",
-    title: "this url is not available",
-    message: `can't find '${req.originalUrl}' on this server.`,
     statusCode: HTTPStatusCodes.NOT_FOUND,
-    more: {
-      suggestions: [
-        "check the method used [GET, POST, PATCH, PUT, DELETE, ...]",
-        `check for spelling error on the url='${req.originalUrl}'`,
-      ],
-    },
-  };
+    errors: [
+      {
+        type: ErrorType.NOT_FOUND,
+        message: `can't find '${req.originalUrl}' on this server.`,
+        detail: {
+          suggestions: [
+            "check the method used [GET, POST, PATCH, PUT, DELETE, ...]",
+            `check for spelling error on the url='${req.originalUrl}'`,
+          ],
+        },
+      },
+    ],
+  } as ErrorResponseModel;
 
   next(error);
 });
 
 app.use((error: ErrorResponseModel, _req, res, _next) => {
-  error.success = error.success || false;
-  error.type = error.type || "UNKNOWN";
-  error.title = error.title || "unknown/unexpected error happened";
-  error.message =
-    error.message ||
-    "unknown/unexpected error happened. check your request or contact the admin!";
-  error.statusCode = error.statusCode || HTTPStatusCodes.INTERNAL_SERVER_ERROR;
-
-  res.status(error.statusCode).json({
-    success: error.success,
-    type: error.type,
-    title: error.title,
-    message: error.message,
-    statusCode: error.statusCode,
-    more: error.more,
-  } as ErrorResponseModel);
+  res.status(error.statusCode).json(error);
 });
 
 app.listen(PORT, () => {
-  console.log(`[server]: Server is running at http://localhost:${PORT}`);
+  console.log(`Server is running at http://localhost:${PORT} 🚀`);
 });

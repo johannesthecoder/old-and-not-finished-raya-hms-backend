@@ -1,72 +1,64 @@
-import { isDefined, isValidEmployeePosition } from "../../core/checker";
-import { EmployeePosition } from "../../core/constants";
+import mongoose from "mongoose";
+import { EmployeeRole } from "../../core/constants";
+import "../../loadEnvironment.ts";
 
-export class EmployeeBaseModel {
-  constructor(
-    public firstName: string,
-    public lastName: string,
-    public phoneNumber: string,
-    public password: string,
-    public position: EmployeePosition
-  ) {}
+const bcrypt = require("bcryptjs");
 
-  public static fromJson(jsonEmployee: any): EmployeeBaseModel {
-    isDefined(jsonEmployee.firstName, "firstName");
-    isDefined(jsonEmployee.lastName, "lastName");
-    isDefined(jsonEmployee.phoneNumber, "phoneNumber");
-    isDefined(jsonEmployee.password, "password");
-    isDefined(jsonEmployee.position, "position");
-    isValidEmployeePosition(jsonEmployee.position, "position");
-
-    return new EmployeeBaseModel(
-      String(jsonEmployee.firstName).toLocaleLowerCase(),
-      String(jsonEmployee.lastName).toLocaleLowerCase(),
-      String(jsonEmployee.phoneNumber).toLocaleLowerCase(),
-      jsonEmployee.password,
-      jsonEmployee.position
-    );
+const EmployeeSchema = new mongoose.Schema(
+  {
+    name: {
+      firstName: { type: String, required: true, lowercase: true, trim: true },
+      lastName: { type: String, required: true, lowercase: true, trim: true },
+    },
+    phoneNumber: {
+      type: String,
+      required: true,
+      match: /^[+]?\d{1,3}[ -\s]?\d{5,14}$/i,
+      unique: true,
+    },
+    password: { type: String, required: true },
+    isAvailable: { type: Boolean, default: true },
+    role: {
+      type: String,
+      enum: Object.values(EmployeeRole),
+      required: true,
+    },
+  },
+  {
+    methods: {
+      async comparePassword(password) {
+        try {
+          return await bcrypt.compare(password, this.password);
+        } catch (error) {
+          throw error;
+        }
+      },
+    },
+    collection: "employees",
   }
-}
+);
 
-export class EmployeeReadModel extends EmployeeBaseModel {
-  constructor(
-    public id: number,
-    public firstName: string,
-    public lastName: string,
-    public phoneNumber: string,
-    public password: string,
-    public position: EmployeePosition
-  ) {
-    super(firstName, lastName, phoneNumber, password, position);
+EmployeeSchema.pre("save", function (next) {
+  const user = this;
+
+  if (this.isModified("password") || this.isNew) {
+    bcrypt.genSalt(10, function (saltError, salt) {
+      if (saltError) {
+        return next(saltError);
+      } else {
+        bcrypt.hash(user.password, salt, function (hashError, hash) {
+          if (hashError) {
+            return next(hashError);
+          }
+
+          user.password = hash;
+          next();
+        });
+      }
+    });
+  } else {
+    return next();
   }
+});
 
-  public static fromJson(jsonEmployee: any): EmployeeReadModel {
-    isDefined(jsonEmployee.firstName, "firstName");
-    isDefined(jsonEmployee.lastName, "lastName");
-    isDefined(jsonEmployee.phoneNumber, "phoneNumber");
-    isDefined(jsonEmployee.password, "password");
-    isDefined(jsonEmployee.position, "position");
-    isValidEmployeePosition(jsonEmployee.position, "position");
-
-    return new EmployeeReadModel(
-      Number(jsonEmployee.id),
-      String(jsonEmployee.firstName).toLocaleLowerCase(),
-      String(jsonEmployee.lastName).toLocaleLowerCase(),
-      String(jsonEmployee.phoneNumber).toLocaleLowerCase(),
-      jsonEmployee.password,
-      jsonEmployee.position
-    );
-  }
-}
-
-export interface SingleEmployeeResponseModel {
-  success: true;
-  employee: EmployeeReadModel;
-  more: any;
-}
-
-export interface ManyEmployeesResponseModel {
-  success: true;
-  employees: EmployeeReadModel[];
-  more: any;
-}
+export const EmployeeModel = mongoose.model("employee", EmployeeSchema);

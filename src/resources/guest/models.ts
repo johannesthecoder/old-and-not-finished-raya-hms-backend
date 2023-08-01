@@ -1,105 +1,41 @@
-import { isDefined, isNumber } from "../../core/checker";
+import mongoose from "mongoose";
 
-export class GuestBaseModel {
-  constructor(
-    public firstName: string,
-    public lastName: string,
-    public phoneNumber: string,
-    public passportNumber: string,
-    public identificationNumber: string,
-    public nationality: string,
-    public balance: number
-  ) {}
-
-  public static fromJson(jsonGuest: any): GuestBaseModel {
-    isDefined(jsonGuest.firstName, "firstName");
-    isDefined(jsonGuest.lastName, "lastName");
-    isDefined(jsonGuest.phoneNumber, "phoneNumber");
-    if (
-      !(
-        isDefined(jsonGuest.passportNumber, "passportNumber", false) ||
-        isDefined(jsonGuest.identificationNumber, "identificationNumber", false)
-      )
-    )
-      isDefined(
-        jsonGuest.identificationNumber,
-        "identificationNumber or passportNumber"
-      );
-    isDefined(jsonGuest.nationality, "nationality");
-    isDefined(jsonGuest.balance, "balance");
-    isNumber(jsonGuest.balance, "balance");
-
-    return new GuestBaseModel(
-      jsonGuest.firstName,
-      jsonGuest.lastName,
-      jsonGuest.phoneNumber,
-      jsonGuest.passportNumber,
-      jsonGuest.identificationNumber,
-      jsonGuest.nationality,
-      Number(jsonGuest.balance)
-    );
+const GuestSchema = new mongoose.Schema(
+  {
+    name: {
+      firstName: { type: String, required: true, lowercase: true, trim: true },
+      lastName: { type: String, required: true, lowercase: true, trim: true },
+      middleName: { type: String, lowercase: true, trim: true },
+    },
+    phoneNumber: {
+      type: String,
+      required: true,
+      match: /^[+]?\d{1,3}[ -\s]?\d{5,14}$/i,
+      unique: true,
+    },
+    IDNumber: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+    },
+    nationality: { type: String, required: true, lowercase: true, trim: true },
+    balance: { type: Number, default: 0 },
+    prePaid: { type: Number, default: 0 },
+    paidOnUse: { type: Number, default: 0 },
+    postPaid: { type: Number, default: 0 },
+  },
+  {
+    methods: {
+      async processPayment() {
+        try {
+        } catch (error) {
+          throw error;
+        }
+      },
+    },
+    collection: "guests",
   }
-}
+);
 
-export class GuestReadModel extends GuestBaseModel {
-  constructor(
-    public id: number,
-    public firstName: string,
-    public lastName: string,
-    public phoneNumber: string,
-    public passportNumber: string,
-    public identificationNumber: string,
-    public nationality: string,
-    public balance: number
-  ) {
-    super(
-      firstName,
-      lastName,
-      phoneNumber,
-      passportNumber,
-      identificationNumber,
-      nationality,
-      balance
-    );
-  }
-
-  public static fromJson(jsonGuest: any): GuestReadModel {
-    isDefined(jsonGuest.firstName, "firstName");
-    isDefined(jsonGuest.lastName, "lastName");
-    isDefined(jsonGuest.phoneNumber, "phoneNumber");
-    if (
-      !(
-        isDefined(jsonGuest.passportNumber, "passportNumber", false) ||
-        isDefined(jsonGuest.identificationNumber, "identificationNumber", false)
-      )
-    )
-      isDefined(
-        jsonGuest.identificationNumber,
-        "identificationNumber or passportNumber"
-      );
-    isDefined(jsonGuest.nationality, "nationality");
-    isDefined(jsonGuest.balance, "balance");
-    isNumber(jsonGuest.balance, "balance");
-
-    return new GuestReadModel(
-      jsonGuest.id,
-      jsonGuest.firstName,
-      jsonGuest.lastName,
-      jsonGuest.phoneNumber,
-      jsonGuest.passportNumber,
-      jsonGuest.identificationNumber,
-      jsonGuest.nationality,
-      Number(jsonGuest.balance)
-    );
-  }
-}
-export interface SingleGuestResponseModel {
-  success: true;
-  guest: GuestReadModel;
-  more: any;
-}
-export interface ManyGuestsResponseModel {
-  success: true;
-  guests: GuestReadModel[];
-  more: any;
-}
+export const GuestModel = mongoose.model("Guest", GuestSchema);

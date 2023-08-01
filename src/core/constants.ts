@@ -1,19 +1,76 @@
-export const DEFAULT_QUERY_LIMIT: number = 25;
+export const DEFAULT_QUERY_LIMIT: number = 45;
+export const PAGE_SIZE: number = DEFAULT_QUERY_LIMIT;
+
 export const MAX_NUMBER: number = 2147483647;
-export type ErrorType =
-  | "UNKNOWN"
-  | "BAD_REQUEST"
-  | "UNAUTHORIZED"
-  | "INCORRECT_CREDENTIAL"
-  | "CREDENTIAL_MISSING"
-  | "NOT_FOUND"
-  | "METHOD_NOT_ALLOWED"
-  | "DUPLICATED_ENTRY"
-  | "MISSING_DATA"
-  | "INCORRECT_DATA";
-export type PaymentMode = "M-PESA" | "CASH" | "VISA" | "CHEQUE";
-export type EmployeePosition = "ADMIN" | "MANAGER" | "RECEPTION";
-export type RoomType = "SINGLE" | "DOUBLE" | "DELUXE" | "TWIN" | "TRIPLET";
+
+export const DAY_START_TIME: any = "04:30";
+
+export enum ErrorType {
+  UNKNOWN = "UNKNOWN",
+  NOT_FOUND = "NOT_FOUND",
+  BAD_REQUEST = "BAD_REQUEST",
+  INVALID_DATA = "INVALID_DATA",
+  MISSING_DATA = "MISSING_DATA",
+  DUPLICATED_ENTRY = "DUPLICATED_ENTRY",
+  UNAUTHORIZED = "UNAUTHORIZED",
+  METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED",
+  NO_UPDATED_DATA = "NO_UPDATED_DATA",
+  INTERNAL_SERVER_ERROR = "INTERNAL_SERVER_ERROR",
+}
+
+export enum PaymentMode {
+  M_PESA = "M-PESA",
+  CASH = "CASH",
+  VISA = "VISA",
+  CHEQUE = "CHEQUE",
+}
+
+export enum EmployeeRole {
+  ADMIN = "ADMIN",
+  GENERAL_MANAGER = "GENERAL_MANAGER",
+  ACCOMMODATION_SUPERVISOR = "ACCOMMODATION_SUPERVISOR",
+  RESTAURANT_SUPERVISOR = "RESTAURANT_SUPERVISOR",
+  RECEPTION = "RECEPTION",
+  STOREKEEPER = "STOREKEEPER",
+  CASHIER = "CASHIER",
+  WAITER = "WAITER",
+  CHEF = "CHEF",
+  DISH_WASHER = "DISH_WASHER",
+  CLEANER = "CLEANER",
+  SECURITY = "SECURITY",
+  LAUNDRY = "LAUNDRY",
+  HOUSEKEEPER = "HOUSEKEEPER",
+  MARKETER = "MARKETER",
+  ACCOUNTANT = "ACCOUNTANT",
+  FINANCE = "FINANCE",
+}
+
+export enum OrderStatus {
+  PENDING = "PENDING",
+  TRANSFERRED = "TRANSFERRED",
+  SETTLED = "SETTLED",
+}
+
+export enum OrderDetailStatus {
+  VOIDED = "VOIDED",
+  TRANSFERRED = "TRANSFERRED",
+  GIFTED = "GIFTED",
+}
+
+export enum RoomType {
+  SINGLE = "SINGLE",
+  DOUBLE = "DOUBLE",
+  DELUXE = "DELUXE",
+  TWIN = "TWIN",
+  TRIPLET = "TRIPLET",
+}
+
+export enum VerificationStatus {
+  SUCCESSFUL = "SUCCESSFUL",
+  PENDING = "PENDING",
+  FAILED = "FAILED",
+}
+
 export enum HTTPStatusCodes {
   /**
    * Official Documentation @ https://tools.ietf.org/html/rfc7231#section-6.2.1

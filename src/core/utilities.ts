@@ -1,169 +1,67 @@
-import moment = require("moment");
-import { ErrorResponseModel } from "./shared_models";
-import { HTTPStatusCodes } from "./constants";
-
-export function globalExceptionHandler(error, next) {
-  next({
-    success: false,
-    type: error.type || "UNKNOWN",
-    title: error.title || "unknown error",
-    message: error.message || "unknown error",
-    statusCode: error.statusCode || HTTPStatusCodes.INTERNAL_SERVER_ERROR,
-    more:
-      typeof error.more === "object" && Object.keys(error.more).length > 0
-        ? error.more
-        : { rawError: error },
-  } as ErrorResponseModel);
+export function toBoolean(value: any): boolean | null {
+  return typeof value === "string"
+    ? ["true", "yes", "yeah", "yep", "awo", "correct", "valid"].includes(value.toLocaleLowerCase())
+      ? true
+      : false
+    : typeof value === "number"
+    ? value > 0
+    : typeof value === "boolean"
+    ? value
+    : null;
 }
 
-export function notFoundException(name: string, filter: object) {
-  return {
-    success: false,
-    type: "NOT_FOUND",
-    title: `${name} not found`,
-    message: `not ${name} with a filter ${JSON.stringify(
-      filter
-    )} was found. provide a valid/realistic filter`,
-    statusCode: HTTPStatusCodes.NOT_FOUND,
-    more: {
-      filter: filter,
-      resultCount: 0,
-    },
-  } as ErrorResponseModel;
+export function isStringWithValue(value: any): boolean {
+  return typeof value === "string" && value.length !== 0;
 }
 
-export function missingDataException(name: string) {
-  return {
-    success: false,
-    type: "MISSING_DATA",
-    title: `${name} wasn't given`,
-    message: `a required data "${name}" wasn't given. provide the ${name} and try again`,
-    statusCode: HTTPStatusCodes.BAD_REQUEST,
-  } as ErrorResponseModel;
+export function isNumber(value: any): boolean {
+  return typeof value === "number" || (typeof value === "string" && !isNaN(Number(value)));
 }
 
-export function unknownException(
-  action: "updating" | "inserting" | "searching"
-) {
-  return {
-    success: false,
-    type: "UNKNOWN",
-    title: `unknown error while ${action}`,
-    message:
-      action == "searching"
-        ? `unknown error while ${action}. check your request and try again. if this keeps happening contact the admin`
-        : `unknown error while ${action}. check if action was successful before trying again to prevent duplication. `,
-    statusCode: HTTPStatusCodes.INTERNAL_SERVER_ERROR,
-  } as ErrorResponseModel;
+export function toDate(str: any): Date | null {
+  const parsedDate = new Date(str);
+  return !isNaN(parsedDate.getTime()) ? parsedDate : null;
 }
 
-/**
- *
- * @example "abcd" return "*a*b*c*d*"
- */
-export function stringToMysqlRegex(s: string): string {
-  let r: string = "";
-  s.split("").forEach(function (v) {
-    r += `%${v}`;
+export function allMatchingRegex(value: any): RegExp {
+  return isStringWithValue(value)
+    ? new RegExp(
+        `.*${value
+          .split("")
+          .map((_) => `${_}.*`)
+          .join("")}`,
+        "i"
+      )
+    : new RegExp("");
+}
+
+export function getSortingObj(params: { sort: any; validSortFields: string[] }, alias: any = []) {
+  let sort = params.sort;
+  let validSortFields = params.validSortFields;
+  let sortObj: any = {};
+
+  if (typeof sort === "string") sort = [sort];
+  else if (!Array.isArray(sort)) return sortObj;
+
+  sort.forEach((field: string) => {
+    let sortAfterSplit = field.split(",").map((i) => i.trim());
+
+    if (sortAfterSplit.length > 1) {
+      if (validSortFields.includes(sortAfterSplit[0])) {
+        sortObj[alias[sortAfterSplit[0]] ? alias[sortAfterSplit[0]] : sortAfterSplit[0]] = [
+          "desc",
+          "-1",
+          "reverse",
+          "descending",
+        ].includes(sortAfterSplit[1].toLocaleLowerCase())
+          ? -1
+          : 1;
+      }
+    } else {
+      field = field.trim();
+      if (validSortFields.includes(field)) sortObj[alias[field] ? alias[field] : field] = 1;
+    }
   });
 
-  return r + "%";
-}
-
-/**
- * @example
- * ~ in the following example
- *    ~ HH:MM:SS are not required
- *    ~ default is 00:00:00
- * - "YYYY-mm-DD:HH:mm:SS" means on that day only
- * - "= YYYY-mm-DD:HH:mm:SS" means on that day only
- * - "> YYYY-mm-DD:HH:mm:SS" means exclusive after this day
- * - ">= YYYY-mm-DD:HH:mm:SS" means inclusive after this day
- * - "< YYYY-mm-DD:HH:mm:SS" means exclusive before this day
- * - "<= YYYY-mm-DD:HH:mm:SS" means inclusive before this day
- * - "< YYYY-mm-DD:HH:mm:SS" means before this day
- * - "<> YYYY-mm-DD:HH:mm:SS YYYY-mm-DD:HH:mm:SS" between those days
- * - ">< YYYY-mm-DD:HH:mm:SS YYYY-mm-DD:HH:mm:SS" between those days
- * @returns {string} if given a valid string
- * @returns {Error} if given invalid string
- */
-export function queryDateFilterMysqlString(dateQuery: string): string {
-  let mysqlString: string = "";
-  let splittedDateFilter: string[] = String(dateQuery).split(" ");
-
-  switch (splittedDateFilter.length) {
-    case 1:
-      if (moment(splittedDateFilter[0]).isValid())
-        mysqlString = `= "${moment(splittedDateFilter[0]).toISOString()}"`;
-      else throw new Error("invalid");
-      break;
-    case 2:
-      if (
-        moment(splittedDateFilter[1]).isValid() &&
-        ["<", "<=", ">", ">=", "="].includes(splittedDateFilter[0])
-      )
-        mysqlString = `${splittedDateFilter[0]} "${moment(
-          splittedDateFilter[1]
-        ).toISOString()}"`;
-      else throw new Error("invalid");
-      break;
-    case 3:
-      if (
-        moment(splittedDateFilter[2]).isValid() &&
-        moment(splittedDateFilter[1]).isValid() &&
-        ["><", "<>"].includes(splittedDateFilter[0])
-      )
-        mysqlString = `BETWEEN "${moment(
-          splittedDateFilter[1]
-        ).toISOString()}" AND "${moment(splittedDateFilter[2]).toISOString()}`;
-      else throw new Error("invalid");
-      break;
-
-    default:
-      throw new Error("invalid");
-      break;
-  }
-
-  return mysqlString;
-}
-
-/**
- * @example
- * - "> XXX" means greater than XXX
- * - ">= XXX" means greater or equal to XXX
- * * - "> XXX" means less than XXX
- * - ">= XXX" means less or equal to XXX
- * - "= XXX" means equal to XXX
- * - "XXX" means equal to XXX
- * - "!= XXX" means not equal to XXX
- * - "=<>= XXX YYYY" means >= XXX & <= YYY
- * - "* XXX YYYY" means >= XXX & <= YYY
- * @returns {string} if given a valid string
- * @returns {Error} if given invalid string
- */
-export function queryNumberFilterMysqlString(numberQuery: string): string {
-  let mysqlString: string = "";
-  let splittedNumberFilter: string[] = String(numberQuery).split(" ");
-
-  switch (splittedNumberFilter.length) {
-    case 1:
-      if (!isNaN(Number(splittedNumberFilter[0])))
-        mysqlString = `= ${splittedNumberFilter[0]}`;
-      break;
-    case 2:
-      if (!isNaN(Number(splittedNumberFilter[1])))
-        mysqlString = `${splittedNumberFilter[0]} ${splittedNumberFilter[1]}`;
-      break;
-    case 3:
-      if (
-        !isNaN(Number(splittedNumberFilter[1])) &&
-        !isNaN(Number(splittedNumberFilter[2]))
-      )
-        mysqlString = `BETWEEN ${splittedNumberFilter[1]} AND ${splittedNumberFilter[2]}`;
-      break;
-    default:
-      throw new Error("invalid");
-      break;
-  }
-  return mysqlString;
+  return sortObj;
 }

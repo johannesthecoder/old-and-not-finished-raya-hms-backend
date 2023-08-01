@@ -1,48 +1,125 @@
-import { EmployeeBaseModel } from "./models";
-import { BaseController } from "../../core/base_controller";
+import { Request, Response, NextFunction } from "express";
+import { globalExceptionHandler } from "../../core/exceptions";
+import { ErrorType, HTTPStatusCodes } from "../../core/constants";
+import { EmployeeModel } from "./models";
+import { ErrorResponseModel } from "../../core/models";
 
-class EmployeeController extends BaseController {
-  constructor(public tableName: string) {
-    super(tableName);
-  }
+const jwt = require("jsonwebtoken");
 
-  async insertOne(params: { newEmployee: EmployeeBaseModel }): Promise<number> {
-    const { newEmployee } = params;
-    return this._insertOne({ newRow: newEmployee });
-  }
+export const registerEmployee = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    let newEmployee = new EmployeeModel(req.body);
 
-  async getOneById(params: { id: number }) {
-    const { id } = params;
-    return this._getOneById({ id: id });
-  }
+    let result = await newEmployee.save();
 
-  async getManyByIds(params: { ids: number[] }) {
-    const { ids } = params;
-    return this._getManyByIds({ ids: ids });
-  }
+    if (result) {
+      const token: string = jwt.sign(
+        {
+          userId: result.id,
+          name: result.name,
+          phoneNumber: result.phoneNumber,
+          role: result.role,
+        },
+        process.env.TOKEN_KEY,
+        { expiresIn: "5h" }
+      );
 
-  async getOne(params: { filter: string; skip? }) {
-    const { filter, skip } = params;
-    return this._getOne({ filter: filter, skip: skip });
-  }
-  async getMany(params: { filter: string; skip?; limit? }) {
-    const { filter, skip, limit } = params;
-    return this._getMany({ filter: filter, skip: skip, limit: limit });
-  }
-  async updateOneById(params: {
-    id: number;
-    updatedEmployee: any;
-  }): Promise<number> {
-    const { id, updatedEmployee } = params;
-    return this._updateOneById({ id: id, updatedRow: updatedEmployee });
-  }
-  async update(params: {
-    filter: string;
-    updatedEmployee: any;
-  }): Promise<number[]> {
-    const { filter, updatedEmployee } = params;
-    return this._update({ filter: filter, updatedRow: updatedEmployee });
-  }
-}
+      result.password = "*****";
 
-export let employeeController = new EmployeeController("employees");
+      res.status(HTTPStatusCodes.CREATED).json({
+        success: true,
+        data: {
+          employee: result,
+          insertedId: result.id,
+          accessToken: token,
+        },
+      });
+    } else {
+    }
+  } catch (error: any) {
+    globalExceptionHandler(error, next);
+  }
+};
+
+export const loginEmployee = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const { phoneNumber, password } = req.body;
+
+    let result = await EmployeeModel.findOne({ phoneNumber: phoneNumber });
+
+    if (!result) {
+      throw {
+        statusCode: HTTPStatusCodes.BAD_REQUEST,
+        errors: [
+          {
+            type: ErrorType.INVALID_DATA,
+            message:
+              "incorrect phone number or password. please provide the correct phone number and password",
+          },
+        ],
+      } as ErrorResponseModel;
+    } else if (!(await result.comparePassword(password))) {
+      throw {
+        statusCode: HTTPStatusCodes.BAD_REQUEST,
+        errors: [
+          {
+            type: ErrorType.INVALID_DATA,
+            message:
+              "incorrect phone number or password. please provide the correct phone number and password",
+          },
+        ],
+      } as ErrorResponseModel;
+    }
+
+    const token: string = jwt.sign(
+      {
+        userId: result.id,
+        name: result.name,
+        phoneNumber: result.phoneNumber,
+        role: result.role,
+      },
+      process.env.TOKEN_KEY,
+      { expiresIn: "2000h" }
+    );
+
+    result.password = "*****";
+
+    res.status(HTTPStatusCodes.OK).json({
+      success: true,
+      data: {
+        employee: result,
+        insertedId: result.id,
+        accessToken: token,
+      },
+    });
+  } catch (error: any) {
+    globalExceptionHandler(error, next);
+  }
+};
+
+export const someSecureResource = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    delete req.query.asdf;
+    res.status(200).json({
+      success: true,
+      awesome: "Yep it works man. It WORKS",
+      user: req.body["$user"],
+    });
+  } catch (error) {
+    globalExceptionHandler(error, next);
+  }
+};
+
+// TODO function updateEmployeePasswordById()

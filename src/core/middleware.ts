@@ -1,5 +1,5 @@
-import { HTTPStatusCodes } from "./constants";
-import { ErrorResponseModel } from "./shared_models";
+import { ErrorType, HTTPStatusCodes } from "./constants";
+import { ErrorResponseModel } from "./models";
 
 const jwt = require("jsonwebtoken");
 
@@ -10,21 +10,30 @@ export const verifyToken = (req, res, next) => {
   if (!token)
     throw {
       success: false,
-      type: "CREDENTIAL_MISSING",
-      title: "no access token",
-      message: `no credential/access token was found. please provide the token in one of the following [requestBody.token, queryParameter.token, header["x-access-token"]].`,
-      statusCode: HTTPStatusCodes.BAD_REQUEST,
+      statusCode: HTTPStatusCodes.UNAUTHORIZED,
+      errors: [
+        {
+          type: ErrorType.UNAUTHORIZED,
+          message: `no credential/access token was found. please provide the token in one of the following [requestBody.token, queryParameter.token, header["x-access-token"]].`,
+        },
+      ],
     } as ErrorResponseModel;
+
   try {
     const decoded = jwt.verify(token, process.env.TOKEN_KEY);
-    req.user = decoded;
-  } catch (err) {
+    req.body["$user"] = decoded;
+  } catch (error) {
+    console.error(error);
+
     throw {
       success: false,
-      type: "INCORRECT_CREDENTIAL",
-      title: "invalid access token",
-      message: `invalid credential/access token was given. please provide the correct access token or login again and try.`,
       statusCode: HTTPStatusCodes.BAD_REQUEST,
+      errors: [
+        {
+          type: ErrorType.INVALID_DATA,
+          message: `expired or invalid credential/access token was given. please provide the correct access token or login again and try.`,
+        },
+      ],
     } as ErrorResponseModel;
   }
   return next();

@@ -1,0 +1,134 @@
+{
+  "assumptions": {
+    "*": [],
+    "models": [
+      "elements are required by default unless stated otherwise",
+      "if the element is a foreign key [FK] instead of datatype, the location/link of the referred element is written",
+      "if default value is provided that mean the element is optional"
+    ]
+  },
+  "symbols": {
+    "PK": "primary key",
+    "FK": "foreign key",
+    "AI": "auto increment",
+    "UQ": "unique",
+    "@default=abc": "default value=abc",
+    "$": "shows datatype",
+    "?": "not required"
+  },
+  "models": {
+    "employees": {
+      "id": "PK UUID $string",
+      "firstName": "$string",
+      "lastName": "$string",
+      "phoneNumber": "UQ $string",
+      "password": "$string",
+      "role": "$enum(admin| manager| restaurantSupervisor| storekeeper| reception| cashier| waiter)"
+    },
+    "rooms": {
+      "id": "PK UUID $string",
+      "number": "UQ $number",
+      "floor": "$string",
+      "type": "$string",
+      "isOccupied": "$boolean",
+      "isClean": "$boolean",
+      "isOutOfOrder": "$boolean",
+      "problems": "$array"
+    },
+    "guests": {
+      "id": "PK UUID $string",
+      "firstName": "$string",
+      "lastName": "$string",
+      "phoneNumber": "UQ $string",
+      "identificationNumber": "UQ $string",
+      "nationality": "$string",
+      "balance": "$number",
+      "prePaid": "$number",
+      "paidOnUse": "$number",
+      "postPaid": "$number"
+    },
+    "menuGroups": {
+      "id": "PK UUID $string",
+      "name": "UQ $string",
+      "isAvailable": "@default=true $boolean",
+      "isDeleted": "@default=false $boolean"
+    },
+    "menuItems": {
+      "id": "PK UUID $string",
+      "name": "UQ $string",
+      "groupId": "FK $groups.id",
+      "isAccompaniment": "$boolean",
+      "accompaniment": "FK #info=JSON.stringify(arrayOfItemsWithIsAccompanimentTrue) $items.id[]",
+      "price": "$number",
+      "disabled": "@default=true $boolean"
+    },
+    "orders": {
+      "id": "PK UUID $string",
+      "postedAt": "@default=Date.now() $datetime",
+      "waiterId": "FK $employees.id",
+      "customerId": "FK ? $guests.id",
+      "status": "$enum(pending | transferred | settled)"
+    },
+    "orderDetails": {
+      "id": "PK UUID $string",
+      "itemId": "FK $menuItems.id",
+      "accompanimentId": "FK $menuItems.id",
+      "status": "$enum(pending | settled | gifted | voided)"
+    },
+    "restaurantPayments": {
+      "id": "PK UUID $string",
+      "cashierId": "FK $employees.id",
+      "customerId": "FK ? $guests.id",
+      "orderId": "FK $orders.id",
+      "amount": "$number",
+      "paidAt": "@default=Date.now() $datetime",
+      "paymentMode": "$enum(cash | mpesa| visa | cheque | others)",
+      "referenceKey": "? $string",
+      "note": "? $string",
+      "verifiedBy": "FK ? $employees.id"
+    },
+    "books": {
+      "id": "PK UUID $string",
+      "receptionId": "FK $employees.id",
+      "guestId": "FK $guests.id",
+      "roomId": "FK $rooms.id",
+      "marketSource": "$string",
+      "roomRate": "$number",
+      "breakfastRate": "@default=0 $number",
+      "bookedAt": "@default=Date.now() $datetime",
+      "roomOccupiedDate": "$date",
+      "checkIn": "$datetime eg:'23 apr 2023 10:00AM'",
+      "checkOut": "$datetime eg: '29 apr 2023 7:00AM'",
+      "status": "$enum(pending | transferred | settled)",
+      "paidBy": "FK ? $guests.id"
+    },
+    "accommodationPayments": {
+      "id": "PK UUID $string",
+      "receptionId": "FK $employees.id",
+      "guestId": "FK $guests.id",
+      "amount": "$number",
+      "paidAt": "@default=Date.now() $datetime",
+      "paymentMode": "$enum(cash | mpesa| visa | cheque | others)",
+      "referenceKey": "$string",
+      "verifiedBy": "FK ? $employees.id"
+    },
+    "commissions": {
+      "id": "PK UUID $string",
+      "receptionId": "FK $employees.id",
+      "givenTo": "$string",
+      "givenAt": "$datetime",
+      "amount": "$number",
+      "commissionedBookings": "FK #info=JSON.stringify(arrayOfBookings) $books.id[]",
+      "isFromBank": "@default=false $boolean"
+    },
+    "expenses": {
+      "id": "PK UUID $string",
+      "receptionId": "FK $employees.id",
+      "givenTo": "$string",
+      "givenAt": "$datetime",
+      "amount": "$number",
+      "category": "$enum(janitorial&cleaning | amenities | linens | maintenance&renovation | stationery | staff | transport | printing | )",
+      "reason": "$string"
+    }
+  }
+}
