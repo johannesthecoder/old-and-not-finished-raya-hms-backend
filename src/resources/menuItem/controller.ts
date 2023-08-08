@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from "express";
-import { globalExceptionHandler } from "../../core/exceptions";
-import { ErrorType, HTTPStatusCodes, PAGE_SIZE } from "../../core/constants";
+import {
+  globalExceptionHandler,
+  missingDataExceptionHandler,
+  notFoundExceptionHandler,
+} from "../../core/exceptions";
+import { HTTPStatusCodes, PAGE_SIZE } from "../../core/constants";
 import { MenuItemModel } from "./models";
 import {
   allMatchingRegex,
@@ -9,7 +13,6 @@ import {
   isStringWithValue,
   toBoolean,
 } from "../../core/utilities";
-import { ErrorResponseModel } from "../../core/models";
 
 export const addMenuItem = async (
   req: Request,
@@ -39,12 +42,14 @@ export const findMenuItemById = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    let result = await MenuItemModel.findById(req.params.id);
+    let menuItem = await MenuItemModel.findById(req.params.id);
+
+    if (!menuItem) notFoundExceptionHandler("menuItem", `id: ${req.params.id}`);
 
     res.status(HTTPStatusCodes.OK).json({
       success: true,
       data: {
-        menuItem: result,
+        menuItem: menuItem,
         filter: { id: req.params.id },
       },
     });
@@ -72,14 +77,16 @@ export const findMenuItems = async (
     if (typeof toBoolean(req.query.isAvailable) === "boolean")
       filter.isAvailable = toBoolean(req.query.isAvailable);
 
-    let result = await MenuItemModel.find(filter).sort(sort).skip(skip).limit(PAGE_SIZE);
+    let menuItems = await MenuItemModel.find(filter).sort(sort).skip(skip).limit(PAGE_SIZE);
+
+    if (!menuItems) notFoundExceptionHandler("menuItems", `id: ${req.params.id}`);
 
     res.status(HTTPStatusCodes.OK).json({
       success: true,
       data: {
-        menuItem: result,
+        menuItem: menuItems,
         filter: req.query,
-        length: result.length,
+        length: menuItems.length,
       },
     });
   } catch (error: any) {
@@ -101,15 +108,7 @@ export const updateMenuItemById = async (
       update.isAvailable = toBoolean(req.body.isAvailable);
 
     if (update.name == null && update.isAvailable == null) {
-      throw {
-        statusCode: HTTPStatusCodes.BAD_REQUEST,
-        errors: [
-          {
-            type: ErrorType.MISSING_DATA,
-            message: "no update was given. add some updates on request body and try again.",
-          },
-        ],
-      } as ErrorResponseModel;
+      missingDataExceptionHandler("updated info");
     } else {
       let result: any = {};
       result = await MenuItemModel.findByIdAndUpdate(req.params.id, update, {

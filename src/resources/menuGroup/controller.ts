@@ -1,5 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { globalExceptionHandler } from "../../core/exceptions";
+import {
+  globalExceptionHandler,
+  missingDataExceptionHandler,
+  notFoundExceptionHandler,
+} from "../../core/exceptions";
 import { ErrorType, HTTPStatusCodes, PAGE_SIZE } from "../../core/constants";
 import { MenuGroupModel } from "./models";
 import {
@@ -9,7 +13,6 @@ import {
   isStringWithValue,
   toBoolean,
 } from "../../core/utilities";
-import { ErrorResponseModel } from "../../core/models";
 
 export const addMenuGroup = async (
   req: Request,
@@ -38,12 +41,14 @@ export const findMenuGroupById = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    let result = await MenuGroupModel.findById(req.params.id);
+    let menuGroup = await MenuGroupModel.findById(req.params.id);
+
+    if (!menuGroup) notFoundExceptionHandler("menuGroup", `id: ${req.params.id}`);
 
     res.status(HTTPStatusCodes.OK).json({
       success: true,
       data: {
-        menuGroup: result,
+        menuGroup: menuGroup,
         filter: { id: req.params.id },
       },
     });
@@ -71,14 +76,15 @@ export const findMenuGroups = async (
     if (typeof toBoolean(req.query.isAvailable) === "boolean")
       filter.isAvailable = toBoolean(req.query.isAvailable);
 
-    let result = await MenuGroupModel.find(filter).sort(sort).skip(skip).limit(PAGE_SIZE);
+    let menuGroups = await MenuGroupModel.find(filter).sort(sort).skip(skip).limit(PAGE_SIZE);
+    if (!menuGroups) notFoundExceptionHandler("menuGroups", `id: ${req.params.id}`);
 
     res.status(HTTPStatusCodes.OK).json({
       success: true,
       data: {
-        menuGroup: result,
+        menuGroups: menuGroups,
         filter: req.query,
-        length: result.length,
+        length: menuGroups.length,
       },
     });
   } catch (error: any) {
@@ -100,15 +106,7 @@ export const updateMenuGroupById = async (
       update.isAvailable = toBoolean(req.body.isAvailable);
 
     if (update.name == null && update.isAvailable == null) {
-      throw {
-        statusCode: HTTPStatusCodes.BAD_REQUEST,
-        errors: [
-          {
-            type: ErrorType.MISSING_DATA,
-            message: "no update was given. add some updates on request body and try again.",
-          },
-        ],
-      } as ErrorResponseModel;
+      missingDataExceptionHandler("updated info");
     } else {
       let result: any = {};
       result = await MenuGroupModel.findByIdAndUpdate(req.params.id, update, {

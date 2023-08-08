@@ -1,11 +1,5 @@
 import express = require("express");
-import {
-  registerEmployee,
-  loginEmployee,
-  someSecureResource,
-  // updateEmployeePasswordById,
-  // updateEmployeeInfoById,
-} from "./controller";
+import { registerEmployee, loginEmployee, someSecureResource } from "./controller";
 import { verifyToken } from "../../core/middleware";
 
 export const authRouter = express.Router();

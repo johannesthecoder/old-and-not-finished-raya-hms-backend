@@ -38,6 +38,9 @@ const EmployeeSchema = new mongoose.Schema(
   }
 );
 
+// TODO add attendance fields for the appropriate employees
+// TODO add salary counter/tracker working days, advance, shorts....
+
 EmployeeSchema.pre("save", function (next) {
   const user = this;
 

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { globalExceptionHandler } from "../../core/exceptions";
+import { globalExceptionHandler, missingDataExceptionHandler } from "../../core/exceptions";
 import { ErrorType, HTTPStatusCodes, PAGE_SIZE } from "../../core/constants";
 import { RoomModel } from "./models";
 import {
@@ -109,15 +109,7 @@ export const updateRoomInfoById = async (
     if (isStringWithValue(req.body.type)) update.type = req.body.type;
 
     if (Object.keys(update).length === 0) {
-      throw {
-        statusCode: HTTPStatusCodes.BAD_REQUEST,
-        errors: [
-          {
-            type: ErrorType.MISSING_DATA,
-            message: "no update was given. add some updates on request body and try again.",
-          },
-        ],
-      } as ErrorResponseModel;
+      missingDataExceptionHandler("updated info");
     } else {
       let result: any = {};
       result = await RoomModel.findByIdAndUpdate(req.params.id, update, {
@@ -154,15 +146,7 @@ export const updateRoomStatus = async (
       update.isOutOfOrder = toBoolean(req.body.isOutOfOrder);
 
     if (Object.keys(update).length === 0) {
-      throw {
-        statusCode: HTTPStatusCodes.BAD_REQUEST,
-        errors: [
-          {
-            type: ErrorType.MISSING_DATA,
-            message: "no update was given. add some updates on request body and try again.",
-          },
-        ],
-      } as ErrorResponseModel;
+      missingDataExceptionHandler("updated info");
     } else {
       let result: any = {};
       if (isStringWithValue(req.params.id)) {
@@ -205,15 +189,7 @@ export const roomIssueTrackerById = async (
     if (Array.isArray(req.body.problems)) update.problems = req.body.problems;
 
     if (Object.keys(update).length === 0) {
-      throw {
-        statusCode: HTTPStatusCodes.BAD_REQUEST,
-        errors: [
-          {
-            type: ErrorType.MISSING_DATA,
-            message: "no update was given. add some updates on request body and try again.",
-          },
-        ],
-      } as ErrorResponseModel;
+      missingDataExceptionHandler("updated info");
     } else {
       let result: any = {};
       result = await RoomModel.findByIdAndUpdate(req.params.id, update, {

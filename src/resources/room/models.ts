@@ -16,14 +16,6 @@ const RoomSchema = new mongoose.Schema(
     problems: { type: [String], default: [] },
   },
   {
-    methods: {
-      async someMethod() {
-        try {
-        } catch (error) {
-          throw error;
-        }
-      },
-    },
     collection: "rooms",
   }
 );

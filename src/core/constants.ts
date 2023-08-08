@@ -52,9 +52,10 @@ export enum OrderStatus {
 }
 
 export enum OrderDetailStatus {
+  PENDING = "PENDING",
   VOIDED = "VOIDED",
-  TRANSFERRED = "TRANSFERRED",
   GIFTED = "GIFTED",
+  SETTLED = "SETTLED",
 }
 
 export enum RoomType {

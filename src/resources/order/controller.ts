@@ -1,15 +1,13 @@
 import { Request, Response, NextFunction } from "express";
-import { globalExceptionHandler } from "../../core/exceptions";
-import { ErrorType, HTTPStatusCodes, PAGE_SIZE } from "../../core/constants";
-import { OrderModel } from "./models";
 import {
-  getSortingObj,
-  isNumber,
-  isStringWithValue,
-  toBoolean,
-  toDate,
-} from "../../core/utilities";
-import { ErrorResponseModel } from "../../core/models";
+  globalExceptionHandler,
+  missingDataExceptionHandler,
+  notFoundExceptionHandler,
+  unknownExceptionHandler,
+} from "../../core/exceptions";
+import { HTTPStatusCodes, PAGE_SIZE } from "../../core/constants";
+import { OrderModel } from "./models";
+import { getSortingObj, isNumber, isStringWithValue, toDate } from "../../core/utilities";
 
 function getOrderFilter(query: any) {
   let filter: any = {};
@@ -61,12 +59,14 @@ export const findOrderById = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    let result = await OrderModel.findById(req.params.id);
+    let order = await OrderModel.findById(req.params.id);
+
+    if (!order) notFoundExceptionHandler("order", `id: ${req.params.id}`);
 
     res.status(HTTPStatusCodes.OK).json({
       success: true,
       data: {
-        order: result,
+        order: order,
         filter: { id: req.params.id },
       },
     });
@@ -88,14 +88,16 @@ export const findOrders = async (
     });
     let skip: number = isNumber(req.query.page) ? (Number(req.query.page) - 1) * PAGE_SIZE : 0;
 
-    let result = await OrderModel.find(filter).sort(sort).skip(skip).limit(PAGE_SIZE);
+    let orders = await OrderModel.find(filter).sort(sort).skip(skip).limit(PAGE_SIZE);
+
+    if (!orders) notFoundExceptionHandler("orders", `the given filter`);
 
     res.status(HTTPStatusCodes.OK).json({
       success: true,
       data: {
-        order: result,
+        order: orders,
         filter: req.query,
-        length: result.length,
+        length: orders.length,
       },
     });
   } catch (error: any) {
@@ -103,40 +105,31 @@ export const findOrders = async (
   }
 };
 
-export const updateOrderById = async (
+export const addItemToAnOrderById = async (
   req: Request,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    let update: any = {};
+    if (!Array.isArray(req.body.items)) missingDataExceptionHandler("items");
 
-    if (isStringWithValue(req.body.name)) update.name = req.body.name;
+    let newItems = req.body.items;
 
-    if (typeof toBoolean(req.body.isAvailable) === "boolean")
-      update.isAvailable = toBoolean(req.body.isAvailable);
+    let order = await OrderModel.findById(req.params.id);
 
-    if (update.name == null && update.isAvailable == null) {
-      throw {
-        statusCode: HTTPStatusCodes.BAD_REQUEST,
-        errors: [
-          {
-            type: ErrorType.MISSING_DATA,
-            message: "no update was given. add some updates on request body and try again.",
-          },
-        ],
-      } as ErrorResponseModel;
-    } else {
-      let result: any = {};
-      result = await OrderModel.findByIdAndUpdate(req.params.id, update, {
-        returnDocument: "after",
-      });
+    if (!order) notFoundExceptionHandler("items", `id=${req.params.id}`);
+    else {
+      order.items.push(...newItems);
+
+      await order.save();
+
+      if (!order) unknownExceptionHandler();
 
       res.status(HTTPStatusCodes.OK).json({
         success: true,
         data: {
-          updatedOrder: result,
-          update: update,
+          updatedOrder: order,
+          update: { items: req.body.items },
           filter: { id: req.params.id },
         },
       });
@@ -145,3 +138,8 @@ export const updateOrderById = async (
     globalExceptionHandler(error, next);
   }
 };
+
+// TODO splitOrder
+// TODO mergeOrders
+// TODO transferOrder
+// this can be to a customer or an employee

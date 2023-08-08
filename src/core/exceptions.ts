@@ -43,3 +43,51 @@ export function globalExceptionHandler(error, next) {
         ],
   } as ErrorResponseModel);
 }
+
+export function notFoundExceptionHandler(name: string, filter: string) {
+  throw {
+    statusCode: HTTPStatusCodes.NOT_FOUND,
+    errors: [
+      {
+        type: ErrorType.NOT_FOUND,
+        message: `The requested ${name} matching ${filter} was not found in the database. Please verify your filter or try another request.`,
+      },
+    ],
+  } as ErrorResponseModel;
+}
+
+export function missingDataExceptionHandler(name: string) {
+  throw {
+    statusCode: HTTPStatusCodes.BAD_REQUEST,
+    errors: [
+      {
+        type: ErrorType.MISSING_DATA,
+        message: `The request cannot be processed because the ${name} field is missing. Please provide the ${name} and try again.`,
+      },
+    ],
+  } as ErrorResponseModel;
+}
+
+export function invalidDataExceptionHandler(name: string, expectedDataType: string) {
+  throw {
+    statusCode: HTTPStatusCodes.BAD_REQUEST,
+    errors: [
+      {
+        type: ErrorType.MISSING_DATA,
+        message: `The request cannot be processed due to invalid data. The ${name} field should be ${expectedDataType}. Please ensure the provided data adheres to the required format and validation rules.`,
+      },
+    ],
+  } as ErrorResponseModel;
+}
+
+export function unknownExceptionHandler() {
+  throw {
+    statusCode: HTTPStatusCodes.INTERNAL_SERVER_ERROR,
+    errors: [
+      {
+        type: ErrorType.UNKNOWN,
+        message: `An unknown error occurred while processing your request. Please try again now/later or contact the support team for assistance.`,
+      },
+    ],
+  } as ErrorResponseModel;
+}

@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-import { globalExceptionHandler } from "../../core/exceptions";
-import { ErrorType, HTTPStatusCodes, PAGE_SIZE } from "../../core/constants";
+import {
+  globalExceptionHandler,
+  missingDataExceptionHandler,
+  notFoundExceptionHandler,
+} from "../../core/exceptions";
+import { HTTPStatusCodes, PAGE_SIZE } from "../../core/constants";
 import { GuestModel } from "./models";
 import { allMatchingRegex, getSortingObj, isNumber, isStringWithValue } from "../../core/utilities";
-import { ErrorResponseModel } from "../../core/models";
 
 function getGuestFilter(query: any) {
   let filter: any = {};
@@ -61,12 +64,14 @@ export const findGuestById = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    let result = await GuestModel.findById(req.params.id);
+    let guest = await GuestModel.findById(req.params.id);
+
+    if (!guest) notFoundExceptionHandler("guest", `id: ${req.params.id}`);
 
     res.status(HTTPStatusCodes.OK).json({
       success: true,
       data: {
-        guest: result,
+        guest: guest,
         filter: { id: req.params.id },
       },
     });
@@ -101,14 +106,16 @@ export const findGuests = async (
     );
     let skip: number = isNumber(req.query.page) ? (Number(req.query.page) - 1) * PAGE_SIZE : 0;
 
-    let result = await GuestModel.find(filter).sort(sort).skip(skip).limit(PAGE_SIZE);
+    let guests = await GuestModel.find(filter).sort(sort).skip(skip).limit(PAGE_SIZE);
+
+    if (!guests) notFoundExceptionHandler("guests", `id: ${req.params.id}`);
 
     res.status(HTTPStatusCodes.OK).json({
       success: true,
       data: {
-        guest: result,
+        guest: guests,
         filter: req.query,
-        length: result.length,
+        length: guests.length,
       },
     });
   } catch (error: any) {
@@ -122,19 +129,27 @@ export const findGuestsBySearchString = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    if (!isStringWithValue(req.query.q))
-      throw {
-        statusCode: HTTPStatusCodes.BAD_REQUEST,
-        errors: [
-          {
-            type: ErrorType.MISSING_DATA,
-            message: "the search string is not given. provide some search string try again.",
-          },
-        ],
-      } as ErrorResponseModel;
+    if (!isStringWithValue(req.query.q)) missingDataExceptionHandler("q");
 
     let searchRegEx = allMatchingRegex(req.query.q);
     let filter: any = { $or: [] };
+    let sort: any = getSortingObj(
+      {
+        sort: req.query.sort,
+        validSortFields: [
+          "firstName",
+          "lastName",
+          "phoneNumber",
+          "IDNumber",
+          "nationality",
+          "balance",
+          "prePaid",
+          "paidOnUse",
+          "postPaid",
+        ],
+      },
+      { firstName: "name.firstName", lastName: "name.lastName" }
+    );
     let skip: number = isNumber(req.query.page) ? (Number(req.query.page) - 1) * PAGE_SIZE : 0;
 
     ["name.firstName", "name.lastName", "phoneNumber", "IDNumber", "nationality"].forEach(
@@ -143,14 +158,16 @@ export const findGuestsBySearchString = async (
       }
     );
 
-    let result = await GuestModel.find(filter).skip(skip).limit(PAGE_SIZE);
+    let guests = await GuestModel.find(filter).sort(sort).skip(skip).limit(PAGE_SIZE);
+
+    if (!guests) notFoundExceptionHandler("guests", `id: ${req.params.id}`);
 
     res.status(HTTPStatusCodes.OK).json({
       success: true,
       data: {
-        guest: result,
+        guests: guests,
         filter: req.query,
-        length: result.length,
+        length: guests.length,
       },
     });
   } catch (error: any) {
@@ -177,15 +194,7 @@ export const updateGuestInfoById = async (
     if (isStringWithValue(req.body.nationality)) update.nationality = req.body.nationality;
 
     if (Object.keys(update).length === 0) {
-      throw {
-        statusCode: HTTPStatusCodes.BAD_REQUEST,
-        errors: [
-          {
-            type: ErrorType.MISSING_DATA,
-            message: "no update was given. add some updates on request body and try again.",
-          },
-        ],
-      } as ErrorResponseModel;
+      missingDataExceptionHandler("updated info");
     } else {
       let result: any = {};
       result = await GuestModel.findByIdAndUpdate(req.params.id, update, {

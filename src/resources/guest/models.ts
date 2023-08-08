@@ -25,17 +25,7 @@ const GuestSchema = new mongoose.Schema(
     paidOnUse: { type: Number, default: 0 },
     postPaid: { type: Number, default: 0 },
   },
-  {
-    methods: {
-      async processPayment() {
-        try {
-        } catch (error) {
-          throw error;
-        }
-      },
-    },
-    collection: "guests",
-  }
+  { collection: "guests" }
 );
 
 export const GuestModel = mongoose.model("Guest", GuestSchema);
