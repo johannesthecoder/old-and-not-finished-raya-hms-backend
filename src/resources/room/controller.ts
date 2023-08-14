@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { globalExceptionHandler, missingDataExceptionHandler } from "../../core/exceptions";
-import { ErrorType, HTTPStatusCodes, PAGE_SIZE } from "../../core/constants";
+import { HTTPStatusCodes, PAGE_SIZE } from "../../core/constants";
 import { RoomModel } from "./models";
 import {
   allMatchingRegex,
@@ -9,7 +9,6 @@ import {
   isStringWithValue,
   toBoolean,
 } from "../../core/utilities";
-import { ErrorResponseModel } from "../../core/models";
 
 function getRoomFilter(query: any) {
   let filter: any = {};
@@ -45,7 +44,6 @@ export const addRoom = async (req: Request, res: Response, next: NextFunction): 
       },
     });
   } catch (error: any) {
-    console.log("🚀 ~ file: controller.ts:232 ~ error:", error);
     globalExceptionHandler(error, next);
   }
 };
@@ -157,7 +155,6 @@ export const updateRoomStatus = async (
         let filter: any = getRoomFilter(req.query);
 
         result = await RoomModel.updateMany(filter, update, { returnDocument: "after" });
-        console.log("🚀 ~ file: controller.ts:178 ~ result:", result);
       }
 
       res.status(HTTPStatusCodes.OK).json({

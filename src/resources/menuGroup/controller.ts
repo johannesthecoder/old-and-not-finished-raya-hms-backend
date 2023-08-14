@@ -77,7 +77,7 @@ export const findMenuGroups = async (
       filter.isAvailable = toBoolean(req.query.isAvailable);
 
     let menuGroups = await MenuGroupModel.find(filter).sort(sort).skip(skip).limit(PAGE_SIZE);
-    if (!menuGroups) notFoundExceptionHandler("menuGroups", `id: ${req.params.id}`);
+    if (!menuGroups) notFoundExceptionHandler("menuGroups", `the provided filter`);
 
     res.status(HTTPStatusCodes.OK).json({
       success: true,

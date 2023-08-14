@@ -1,13 +1,30 @@
-import mongoose from "mongoose";
+import { Document, Schema, model } from "mongoose";
 import { OrderDetailStatus, OrderStatus } from "../../core/constants";
 import { EmployeeModel } from "../auth/models";
 import { GuestModel } from "../guest/models";
 import { MenuItemModel } from "../menuItem/models";
 import { notFoundExceptionHandler } from "../../core/exceptions";
 
-export const OrderDetailSchema = new mongoose.Schema({
-  itemId: { type: mongoose.Schema.Types.ObjectId, ref: "menuItems", required: true },
-  accompanimentId: { type: mongoose.Schema.Types.ObjectId, ref: "menuItems" },
+interface IOrderDetail extends Document {
+  itemId: Schema.Types.ObjectId;
+  price: number;
+  accompanimentId: Schema.Types.ObjectId;
+  status: OrderDetailStatus;
+}
+
+interface IOrder extends Document {
+  postedAt: Date;
+  waiterId: Schema.Types.ObjectId;
+  customerId: Schema.Types.ObjectId;
+  status: OrderStatus;
+  tableNumber: number;
+  items: [IOrderDetail];
+}
+
+export const OrderDetailSchema = new Schema<IOrderDetail>({
+  itemId: { type: Schema.Types.ObjectId, ref: "menuItems", required: true },
+  price: { type: Number, required: true },
+  accompanimentId: { type: Schema.Types.ObjectId, ref: "menuItems" },
   status: {
     type: String,
     enum: Object.values(OrderDetailStatus),
@@ -15,11 +32,11 @@ export const OrderDetailSchema = new mongoose.Schema({
   },
 });
 
-const OrderSchema = new mongoose.Schema(
+const OrderSchema = new Schema<IOrder>(
   {
-    postedAt: { type: Date, default: Date() },
-    waiterId: { type: mongoose.Schema.Types.ObjectId, ref: "menuGroups", required: true },
-    customerId: { type: mongoose.Schema.Types.ObjectId },
+    postedAt: { type: Date, default: Date.now },
+    waiterId: { type: Schema.Types.ObjectId, ref: "menuGroups", required: true },
+    customerId: { type: Schema.Types.ObjectId },
     status: { type: String, enum: Object.values(OrderStatus), default: OrderStatus.PENDING },
     tableNumber: { type: Number, default: -1 },
     items: [OrderDetailSchema],
@@ -32,8 +49,6 @@ OrderSchema.pre("save", async function (next) {
 
   if (this.items.length > 0) {
     for (let i = 0; i < this.items.length; i++) {
-      console.log("🚀 ~ file: models.ts:37 ~ this.items[i].itemId:", this.items[i].itemId);
-
       await checkItemId(this.items[i].itemId);
       if (this.items[i].accompanimentId) {
         await checkAccompanimentId(this.items[i].itemId, this.items[i].accompanimentId);
@@ -78,4 +93,4 @@ async function checkCustomerId(customerId: any): Promise<boolean> {
   return true;
 }
 
-export const OrderModel = mongoose.model("order", OrderSchema);
+export const OrderModel = model<IOrder>("order", OrderSchema);

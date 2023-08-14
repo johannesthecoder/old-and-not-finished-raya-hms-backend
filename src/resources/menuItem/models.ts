@@ -1,18 +1,25 @@
-import mongoose from "mongoose";
-import { ErrorType, HTTPStatusCodes } from "../../core/constants";
-import { ErrorResponseModel } from "../../core/models";
+import { Document, Schema, model } from "mongoose";
 import { MenuGroupModel } from "../menuGroup/models";
 import { notFoundExceptionHandler } from "../../core/exceptions";
 
-const MenuItemSchema = new mongoose.Schema(
+interface IMenuItem extends Document {
+  name: string;
+  price: number;
+  groupId: Schema.Types.ObjectId;
+  isAccompaniment: boolean;
+  accompaniments: [Schema.Types.ObjectId];
+  isAvailable: boolean;
+}
+
+const MenuItemSchema = new Schema<IMenuItem>(
   {
     name: { type: String, lowercase: true, required: true, unique: true },
     price: { type: Number, required: true, min: 0 },
-    groupId: { type: mongoose.Schema.Types.ObjectId, ref: "menuGroups", required: true },
+    groupId: { type: Schema.Types.ObjectId, ref: "menuGroups", required: true },
     isAccompaniment: { type: Boolean, default: false },
     accompaniments: [
       {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         minLength: 24,
         maxLength: 24,
         default: [],
@@ -55,4 +62,4 @@ async function getInvalidAccompanimentIds(accompanimentIds: any[]): Promise<bool
   return true;
 }
 
-export const MenuItemModel = mongoose.model("menuItem", MenuItemSchema);
+export const MenuItemModel = model<IMenuItem>("menuItem", MenuItemSchema);

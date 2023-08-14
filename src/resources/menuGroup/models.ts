@@ -1,6 +1,11 @@
-import mongoose from "mongoose";
+import { Document, Schema, model } from "mongoose";
 
-const MenuGroupSchema = new mongoose.Schema(
+interface IMenuGroup extends Document {
+  name: string;
+  isAvailable: boolean;
+}
+
+const MenuGroupSchema = new Schema<IMenuGroup>(
   {
     name: {
       type: String,
@@ -14,4 +19,4 @@ const MenuGroupSchema = new mongoose.Schema(
   { collection: "menuGroups" }
 );
 
-export const MenuGroupModel = mongoose.model("menuGroup", MenuGroupSchema);
+export const MenuGroupModel = model<IMenuGroup>("menuGroup", MenuGroupSchema);

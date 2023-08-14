@@ -1,6 +1,20 @@
-import mongoose from "mongoose";
+import { Document, Schema, model } from "mongoose";
 
-const GuestSchema = new mongoose.Schema(
+interface IGuest extends Document {
+  name: {
+    firstName: string;
+    lastName: string;
+  };
+  phoneNumber: string;
+  IDNumber: string;
+  nationality: string;
+  balance: number;
+  prePaid: number;
+  paidOnUse: number;
+  postPaid: number;
+}
+
+const GuestSchema = new Schema<IGuest>(
   {
     name: {
       firstName: { type: String, required: true, lowercase: true, trim: true },
@@ -28,4 +42,4 @@ const GuestSchema = new mongoose.Schema(
   { collection: "guests" }
 );
 
-export const GuestModel = mongoose.model("Guest", GuestSchema);
+export const GuestModel = model<IGuest>("Guest", GuestSchema);

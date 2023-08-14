@@ -108,7 +108,7 @@ export const findGuests = async (
 
     let guests = await GuestModel.find(filter).sort(sort).skip(skip).limit(PAGE_SIZE);
 
-    if (!guests) notFoundExceptionHandler("guests", `id: ${req.params.id}`);
+    if (!guests) notFoundExceptionHandler("guests", `the provided filter`);
 
     res.status(HTTPStatusCodes.OK).json({
       success: true,
@@ -160,7 +160,7 @@ export const findGuestsBySearchString = async (
 
     let guests = await GuestModel.find(filter).sort(sort).skip(skip).limit(PAGE_SIZE);
 
-    if (!guests) notFoundExceptionHandler("guests", `id: ${req.params.id}`);
+    if (!guests) notFoundExceptionHandler("guests", `q: ${req.query.q}`);
 
     res.status(HTTPStatusCodes.OK).json({
       success: true,

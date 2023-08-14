@@ -79,7 +79,7 @@ export const findMenuItems = async (
 
     let menuItems = await MenuItemModel.find(filter).sort(sort).skip(skip).limit(PAGE_SIZE);
 
-    if (!menuItems) notFoundExceptionHandler("menuItems", `id: ${req.params.id}`);
+    if (!menuItems) notFoundExceptionHandler("menuItems", `the provided filter`);
 
     res.status(HTTPStatusCodes.OK).json({
       success: true,

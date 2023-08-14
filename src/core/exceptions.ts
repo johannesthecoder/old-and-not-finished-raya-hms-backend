@@ -80,6 +80,33 @@ export function invalidDataExceptionHandler(name: string, expectedDataType: stri
   } as ErrorResponseModel;
 }
 
+export function unauthorizedExceptionHandler() {
+  throw {
+    success: false,
+    statusCode: HTTPStatusCodes.UNAUTHORIZED,
+    errors: [
+      {
+        type: ErrorType.UNAUTHORIZED,
+        message: "You are authenticated but do not have permission to access this resource.",
+      },
+    ],
+  } as ErrorResponseModel;
+}
+
+export function unauthenticatedExceptionHandler() {
+  throw {
+    success: false,
+    statusCode: HTTPStatusCodes.FORBIDDEN,
+    errors: [
+      {
+        type: ErrorType.UNAUTHENTICATED,
+        message:
+          "You are not authorized to access this resource. Please provide valid authentication credentials.",
+      },
+    ],
+  } as ErrorResponseModel;
+}
+
 export function unknownExceptionHandler() {
   throw {
     statusCode: HTTPStatusCodes.INTERNAL_SERVER_ERROR,

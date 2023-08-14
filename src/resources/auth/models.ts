@@ -1,10 +1,21 @@
-import mongoose from "mongoose";
+import { Document, Schema, model } from "mongoose";
 import { EmployeeRole } from "../../core/constants";
 import "../../loadEnvironment.ts";
 
 const bcrypt = require("bcryptjs");
 
-const EmployeeSchema = new mongoose.Schema(
+interface IEmployee extends Document {
+  name: {
+    firstName: string;
+    lastName: string;
+  };
+  phoneNumber: string;
+  password: string;
+  isAvailable: boolean;
+  role: EmployeeRole;
+}
+
+const EmployeeSchema = new Schema<IEmployee>(
   {
     name: {
       firstName: { type: String, required: true, lowercase: true, trim: true },
@@ -18,11 +29,7 @@ const EmployeeSchema = new mongoose.Schema(
     },
     password: { type: String, required: true },
     isAvailable: { type: Boolean, default: true },
-    role: {
-      type: String,
-      enum: Object.values(EmployeeRole),
-      required: true,
-    },
+    role: { type: String, enum: Object.values(EmployeeRole), required: true },
   },
   {
     methods: {
@@ -64,4 +71,4 @@ EmployeeSchema.pre("save", function (next) {
   }
 });
 
-export const EmployeeModel = mongoose.model("employee", EmployeeSchema);
+export const EmployeeModel = model<IEmployee>("employee", EmployeeSchema);

@@ -1,7 +1,16 @@
-import mongoose from "mongoose";
+import { Document, Schema, model } from "mongoose";
 import { RoomType } from "../../core/constants";
+interface IRoom extends Document {
+  number: number;
+  floor: string;
+  type: RoomType;
+  isOccupied: boolean;
+  isClean: boolean;
+  isOutOfOrder: boolean;
+  problems: [string];
+}
 
-const RoomSchema = new mongoose.Schema(
+const RoomSchema = new Schema<IRoom>(
   {
     number: { type: Number, required: true, unique: true },
     floor: { type: String, required: true },
@@ -20,4 +29,4 @@ const RoomSchema = new mongoose.Schema(
   }
 );
 
-export const RoomModel = mongoose.model("Room", RoomSchema);
+export const RoomModel = model<IRoom>("Room", RoomSchema);

@@ -65,3 +65,21 @@ export function getSortingObj(params: { sort: any; validSortFields: string[] }, 
 
   return sortObj;
 }
+
+export function findDifferences(
+  oldObj: any,
+  newObj: any
+): { [key: string]: { [key: string]: any } } {
+  const differences = {};
+
+  Object.keys(oldObj).forEach((key) => {
+    if (oldObj[key] !== newObj[key]) {
+      differences[key] = {
+        from: oldObj[key],
+        to: newObj[key],
+      };
+    }
+  });
+
+  return differences;
+}
